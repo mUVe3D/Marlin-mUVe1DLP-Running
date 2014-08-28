@@ -2,6 +2,7 @@ Marlin firmware development branch, removes the need for mUVe 3D GCode Fixing so
 
 All implemented and working! See MCodes below.
 
+Installation Instructions: http://www.muve3d.net/press/supportsources/muve-1-software/
 
 M650 D L P S -  *This must be set inside of your starting GCode in Slic3r, it can also be changed at any point during printing.*
 
