@@ -361,7 +361,8 @@ const bool Z_MAX_ENDSTOP_INVERTING = false; // set to true to invert the logic o
 
 // default settings
 
-#define DEFAULT_AXIS_STEPS_PER_UNIT   {36.36,36.36,640,640}  // default steps per unit for Ultimaker
+//#define DEFAULT_AXIS_STEPS_PER_UNIT   {36.36,36.36,640,640}  // default settings for for mUVe 1-1.1
+#define DEFAULT_AXIS_STEPS_PER_UNIT   {36.36,36.36,400,400}  // default settings for for mUVe 1.5 or if you have the leadscrew upgrade
 #define DEFAULT_MAX_FEEDRATE          {600, 600, 8, 8}    // (mm/sec)
 #define DEFAULT_MAX_ACCELERATION      {4000,4000,4,4}    // X, Y, Z, E maximum start speed for accelerated moves. E default values are good for skeinforge 40+, for older versions raise them a lot.
 
