@@ -2,16 +2,18 @@ All implemented and working! See MCodes below.
 
 Installation Instructions: http://www.muve3d.net/press/supportsources/muve-1-software/
 
-M650 D P S - 
+M650 D P R S - 
 
 	D - Set Distance in mm - Set to 0 to remove the peel
+	
+	R - Set Speed in mm/s - Retract speed of the peel
 
 	P - Pause in milliseconds - Set to 0 to ignore pause
 
 	S - Peel move speed, mm/s - 2mm/s max unless max speed for Z and E axis changed in configuration.h
 
 
-Example: M650 D2 P500 S2 - Peel distance 2mm, pause .5 seconds, peel speed 2 mm/s
+Example: M650 D2 P500 R3 S2 - Peel distance 2mm, pause .5 seconds, peel speed 2 mm/s, retract speed 3mm/s
 
 M651 - Initiate the peel move with the settings chosen.
 
