@@ -226,10 +226,10 @@ float delta[3] = {0.0, 0.0, 0.0};
 //===========================================================================
 const char axis_codes[NUM_AXIS] = {'X', 'Y', 'Z', 'E'};
 static float destination[NUM_AXIS] = {  0.0, 0.0, 0.0, 0.0};
-static float peel_distance = 0; //User by mUVe 3D Peel Control
+static float peel_distance = 0; //Used by mUVe 3D Peel Control
 static float peel_speed = 0; //Used by mUVe 3D Peel Control
 static float peel_pause = 0; //Used by mUVe 3D Peel Control
-static float laser_power = 0; //Used by mUVe 3D laser control
+static float laser_power = 0; //Used by mUVe 3D laser Control
 static float offset[3] = {0.0, 0.0, 0.0};
 static bool home_all_axis = true;
 static float feedrate = 1500.0, next_feedrate, saved_feedrate;
