@@ -149,12 +149,11 @@
 // M600 - Pause for filament change X[pos] Y[pos] Z[relative lift] E[initial retract] L[later retract distance for removal]
 // M666 - set delta endstop adjustemnt
 // M605 - Set dual x-carriage movement mode: S<mode> [ X<duplication x-offset> R<duplication temp offset> ]
-// M650 - [mUVe3D] - Set peel distance
+// M650 - [mUVe3D] - Set peel and tilt distances
 // M651 - [mUVe3D] - Execute peel move
 // M652 - [mUVe3D] - Turn off laser now
-// M653 - [mUVe3D] - Set tilt distance
-// M654 - [mUVe3D] - Execute tilt move
-// M655 - [mUVe3D] - Execute untilt move
+// M653 - [mUVe3D] - Execute tilt move
+// M654 - [mUVe3D] - Execute untilt move
 // M907 - Set digital trimpot motor current using axis codes.
 // M908 - Control digital trimpot directly.
 // M350 - Set microstepping mode.
@@ -2472,6 +2471,17 @@ void process_commands()
       else {
           laser_power=255;
         }
+      if(code_seen('T')) {
+        tilt_distance = (float) code_value();
+      }
+      else {
+        tilt_distance = 20;
+      }
+      // Initialize tilted to false. The intent here is that you would send this command at the start of a print job, and
+      // the platform would be level when you do. As such, we assume that you either hand-cranked it to level, or executed 
+      // an M655 command via manual GCode before running a new print job. If not, then the platform is currently tilted, and
+      // your print job is going to go poorly.
+      tilted = false;
     }
     break;
     
@@ -2505,24 +2515,7 @@ void process_commands()
     }
     break;
 
-    case 653: // M653 - set tilt parameters
-    {
-      st_synchronize();
-      if(code_seen('D')) {
-        tilt_distance = (float) code_value();
-      }
-      else {
-        tilt_distance = 20;
-      }
-      // Initialize tilted to false. The intent here is that you would send this command at the start of a print job, and
-      // the platform would be level when you do. As such, we assume that you either hand-cranked it to level, or executed 
-      // an M655 command via manual GCode before running a new print job. If not, then the platform is currently tilted, and
-      // your print job is going to go poorly.
-      tilted = false;
-    }
-    break;
-
-    case 654: // M654 - execute tilt move
+    case 653: // M653 - execute tilt move
     {
         // Double tilts are not allowed.
         if (!tilted) {      
@@ -2533,7 +2526,7 @@ void process_commands()
     }
     break;
 
-    case 655: // M655 - execute untilt move
+    case 654: // M654 - execute untilt move
     {
         // Can only untilt if tilted
         if (tilted) {
