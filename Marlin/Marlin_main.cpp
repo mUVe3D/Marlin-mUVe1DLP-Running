@@ -2530,7 +2530,12 @@ void process_commands()
     {
         // Can only untilt if tilted
         if (tilted) {
-           plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + tilt_distance, destination[Z_AXIS] + tilt_distance, 30, active_extruder);
+           // To prevent subsequent commands from not knowing our
+           // actual position, update the Z axis, then move to it.
+           destination[Z_AXIS] += tilt_distance;
+           plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS], 30, active_extruder);
+           // And save it away as our current position, because we're there.
+           memcpy(current_position, destination, sizeof(current_position));
            st_synchronize();
            tilted = false;
         }
