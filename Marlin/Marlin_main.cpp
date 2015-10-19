@@ -152,6 +152,9 @@
 // M650 - [mUVe3D] - Set peel distance
 // M651 - [mUVe3D] - Execute peel move
 // M652 - [mUVe3D] - Turn off laser now
+// M653 - [mUVe3D] - Set tilt distance
+// M654 - [mUVe3D] - Execute tilt move
+// M655 - [mUVe3D] - Execute untilt move
 // M907 - Set digital trimpot motor current using axis codes.
 // M908 - Control digital trimpot directly.
 // M350 - Set microstepping mode.
@@ -233,6 +236,8 @@ static float peel_distance = 0; //Used by mUVe 3D Peel Control
 static float peel_speed = 0; //Used by mUVe 3D Peel Control
 static float peel_pause = 0; //Used by mUVe 3D Peel Control
 static float laser_power = 0; //Used by mUVe 3D laser Control
+static float tilt_distance = 0; //Used by mUVe 3D Tilt Control
+static bool tilted = false; // Whether we're currently tilted. Sending the command again will tell us to un-tilt.
 static float offset[3] = {0.0, 0.0, 0.0};
 static bool home_all_axis = true;
 static float feedrate = 1500.0, next_feedrate, saved_feedrate;
@@ -2497,6 +2502,45 @@ void process_commands()
      digitalWrite(LASER_PIN, 0); //turn off laser 
      analogWrite(LASER_PIN, 0); //turn off laser
      st_synchronize();
+    }
+    break;
+
+    case 653: // M653 - set tilt parameters
+    {
+      st_synchronize();
+      if(code_seen('D')) {
+        tilt_distance = (float) code_value();
+      }
+      else {
+        tilt_distance = 20;
+      }
+      // Initialize tilted to false. The intent here is that you would send this command at the start of a print job, and
+      // the platform would be level when you do. As such, we assume that you either hand-cranked it to level, or executed 
+      // an M655 command via manual GCode before running a new print job. If not, then the platform is currently tilted, and
+      // your print job is going to go poorly.
+      tilted = false;
+    }
+    break;
+
+    case 654: // M654 - execute tilt move
+    {
+        // Double tilts are not allowed.
+        if (!tilted) {      
+          plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + tilt_distance, destination[Z_AXIS], 30, active_extruder);
+          st_synchronize();
+          tilted = true;
+        }
+    }
+    break;
+
+    case 655: // M655 - execute untilt move
+    {
+        // Can only untilt if tilted
+        if (tilted) {
+           plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + tilt_distance, destination[Z_AXIS] + tilt_distance, 30, active_extruder);
+           st_synchronize();
+           tilted = false;
+        }
     }
     break;
     
