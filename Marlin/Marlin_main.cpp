@@ -2498,6 +2498,7 @@ void process_commands()
      analogWrite(LASER_PIN, 0); //turn off laser
      st_synchronize();
     }
+    break;
     
     case 907: // M907 Set digital trimpot motor current using axis codes.
     {
