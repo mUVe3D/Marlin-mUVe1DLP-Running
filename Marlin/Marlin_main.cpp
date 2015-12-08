@@ -235,6 +235,7 @@ static float peel_distance = 0; //Used by mUVe 3D Peel Control
 static float peel_speed = 0; //Used by mUVe 3D Peel Control
 static float peel_pause = 0; //Used by mUVe 3D Peel Control
 static float laser_power = 0; //Used by mUVe 3D laser Control
+static float retract_speed = 0; //Used by mUVe 3D Peel Control
 static float tilt_distance = 0; //Used by mUVe 3D Tilt Control
 static bool tilted = false; // Whether we're currently tilted. Sending the command again will tell us to un-tilt.
 static float offset[3] = {0.0, 0.0, 0.0};
@@ -2461,6 +2462,11 @@ void process_commands()
       else {
           peel_speed=2;
         }
+        
+        if(code_seen('R')) retract_speed = (float) code_value();
+      else {
+          retract_speed=2;
+        }
     
       if(code_seen('P')) peel_pause = (float) code_value();
       else {
@@ -2502,7 +2508,7 @@ void process_commands()
         lcd_update();      
       }
     
-        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS], 30, active_extruder);
+        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS], retract_speed, active_extruder);
         st_synchronize();
     }
     break;
