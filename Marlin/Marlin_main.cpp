@@ -2508,6 +2508,7 @@ void process_commands()
         lcd_update();      
       }
     
+        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS] + peel_distance, retract_speed, active_extruder);
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS], retract_speed, active_extruder);
         st_synchronize();
     }
