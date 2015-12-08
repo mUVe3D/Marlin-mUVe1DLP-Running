@@ -149,6 +149,11 @@
 // M600 - Pause for filament change X[pos] Y[pos] Z[relative lift] E[initial retract] L[later retract distance for removal]
 // M666 - set delta endstop adjustemnt
 // M605 - Set dual x-carriage movement mode: S<mode> [ X<duplication x-offset> R<duplication temp offset> ]
+// M650 - [mUVe3D] - Set peel and tilt distances
+// M651 - [mUVe3D] - Execute peel move
+// M652 - [mUVe3D] - Turn off laser now
+// M653 - [mUVe3D] - Execute tilt move
+// M654 - [mUVe3D] - Execute untilt move
 // M907 - Set digital trimpot motor current using axis codes.
 // M908 - Control digital trimpot directly.
 // M350 - Set microstepping mode.
@@ -229,8 +234,10 @@ static float destination[NUM_AXIS] = {  0.0, 0.0, 0.0, 0.0};
 static float peel_distance = 0; //Used by mUVe 3D Peel Control
 static float peel_speed = 0; //Used by mUVe 3D Peel Control
 static float peel_pause = 0; //Used by mUVe 3D Peel Control
-static float laser_power = 0; //Used by mUVe 3D laser control
+static float laser_power = 0; //Used by mUVe 3D laser Control
 static float retract_speed = 0; //Used by mUVe 3D Peel Control
+static float tilt_distance = 0; //Used by mUVe 3D Tilt Control
+static bool tilted = false; // Whether we're currently tilted. Sending the command again will tell us to un-tilt.
 static float offset[3] = {0.0, 0.0, 0.0};
 static bool home_all_axis = true;
 static float feedrate = 1500.0, next_feedrate, saved_feedrate;
@@ -2470,6 +2477,17 @@ void process_commands()
       else {
           laser_power=255;
         }
+      if(code_seen('T')) {
+        tilt_distance = (float) code_value();
+      }
+      else {
+        tilt_distance = 20;
+      }
+      // Initialize tilted to false. The intent here is that you would send this command at the start of a print job, and
+      // the platform would be level when you do. As such, we assume that you either hand-cranked it to level, or executed 
+      // an M655 command via manual GCode before running a new print job. If not, then the platform is currently tilted, and
+      // your print job is going to go poorly.
+      tilted = false;
     }
     break;
     
@@ -2501,6 +2519,34 @@ void process_commands()
      analogWrite(LASER_PIN, 0); //turn off laser
      st_synchronize();
     }
+    break;
+
+    case 653: // M653 - execute tilt move
+    {
+        // Double tilts are not allowed.
+        if (!tilted) {      
+          plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + tilt_distance, destination[Z_AXIS], retract_speed, active_extruder);
+          st_synchronize();
+          tilted = true;
+        }
+    }
+    break;
+
+    case 654: // M654 - execute untilt move
+    {
+        // Can only untilt if tilted
+        if (tilted) {
+           // To prevent subsequent commands from not knowing our
+           // actual position, update the Z axis, then move to it.
+           destination[Z_AXIS] += tilt_distance;
+           plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS], retract_speed, active_extruder);
+           // And save it away as our current position, because we're there.
+           memcpy(current_position, destination, sizeof(current_position));
+           st_synchronize();
+           tilted = false;
+        }
+    }
+    break;
     
     case 907: // M907 Set digital trimpot motor current using axis codes.
     {
