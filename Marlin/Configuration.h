@@ -332,7 +332,7 @@ const bool Z_MAX_ENDSTOP_INVERTING = false; // set to true to invert the logic o
 #define X_MIN_POS 0
 #define Y_MAX_POS 144
 #define Y_MIN_POS 0
-#define Z_MAX_POS 180
+#define Z_MAX_POS 250
 
 #ifndef ENABLE_AUTO_BED_LEVELING
 #define Z_MIN_POS 0
@@ -363,7 +363,7 @@ const bool Z_MAX_ENDSTOP_INVERTING = false; // set to true to invert the logic o
 
 //#define DEFAULT_AXIS_STEPS_PER_UNIT   {36.36,36.36,640,640}  // default settings for for mUVe 1-1.1
 #define DEFAULT_AXIS_STEPS_PER_UNIT   {36.36,36.36,400,400}  // default settings for for mUVe 1.5 or if you have the leadscrew upgrade
-#define DEFAULT_MAX_FEEDRATE          {600, 600, 8, 8}    // (mm/sec)
+#define DEFAULT_MAX_FEEDRATE          {600, 600, 20, 20}    // (mm/sec)
 #define DEFAULT_MAX_ACCELERATION      {4000,4000,4,4}    // X, Y, Z, E maximum start speed for accelerated moves. E default values are good for skeinforge 40+, for older versions raise them a lot.
 
 #define DEFAULT_ACCELERATION          3000    // X, Y, Z and E max acceleration in mm/s^2 for printing moves
@@ -407,7 +407,7 @@ const bool Z_MAX_ENDSTOP_INVERTING = false; // set to true to invert the logic o
 //LCD and SD support
 //#define ULTRA_LCD  //general lcd support, also 16x2
 //#define DOGLCD  // Support for SPI LCD 128x64 (Controller ST7565R graphic Display Family)
-#define SDSUPPORT // Enable SD Card Support in Hardware Console
+//#define SDSUPPORT // Enable SD Card Support in Hardware Console
 //#define SDSLOW // Use slower SD transfer mode (not normally needed - uncomment if you're getting volume init error)
 //#define ENCODER_PULSES_PER_STEP 1 // Increase if you have a high resolution encoder
 //#define ULTIMAKERCONTROLLER //as available from the ultimaker online store.
