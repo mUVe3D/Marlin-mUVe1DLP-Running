@@ -1,8 +1,8 @@
-All implemented and working! See MCodes below.
+All implemented and working! See mUVe 3D's Custom printer control Machine Codes, MCodes, below for examples of how to take advantage of the advanced motion features of the firmware and chassis. 
 
 Installation Instructions: http://www.muve3d.net/press/supportsources/muve-1-software/
 
-M650 D P R S - 
+M650 D P R S T- 
 
 	D - Set Distance in mm - Set to 0 to remove the peel
 	
@@ -11,11 +11,19 @@ M650 D P R S -
 	P - Pause in milliseconds - Set to 0 to ignore pause
 
 	S - Peel move speed, mm/s - 2mm/s max unless max speed for Z and E axis changed in configuration.h
+	
+	T - Tilt option for post print resin draining. Default 20 mm, values sent in mm
 
 
-Example: M650 D2 P500 R3 S2 - Peel distance 2mm, pause .5 seconds, peel speed 2 mm/s, retract speed 3mm/s
+Example: M650 D2 P500 R3 S2 T10- Peel distance 2mm, pause .5 seconds, peel speed 2 mm/s, retract speed 3mm/s, Post Print Tilt 10mm
 
 M651 - Initiate the peel move with the settings chosen.
+
+//M652 - Laser Printer Usage Only - Laser Extinguish - Ignore
+
+M653 - Execute tilt, this should be placed in your end of print GCode
+
+M654 - Restore from tilt, this is sent manually to place the build stage back at a horizontal position
 
 ==========================
 Marlin 3D Printer Firmware
