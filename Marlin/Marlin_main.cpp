@@ -2557,35 +2557,17 @@ void process_commands()
     }
     break;
 
-    case 655: // M655: Modified version of the M651. Functions: peel move and add layer. No need for G1.
+    case 655: // M655: Modified version of the M651. Functions: peel
+              // move and add layer. No need for G1.
     {
         st_synchronize();
-        destination[Z_AXIS] = layer_thickness + (axis_relative_modes[Z_AXIS] || relative_mode) * current_position[Z_AXIS];
 
-        if (destination[Z_AXIS] < min_pos[Z_AXIS]) {
-            destination[Z_AXIS] = min_pos[Z_AXIS];
-        }
-
-        if (destination[Z_AXIS] > max_pos[Z_AXIS]) {
-            destination[Z_AXIS] = max_pos[Z_AXIS];
-        }
-
-        plan_buffer_line(destination[X_AXIS],
-                         destination[Y_AXIS],
-                         destination[Z_AXIS] + peel_distance,
-                         destination[Z_AXIS],
-                         peel_speed,
-                         active_extruder);
-
-        plan_buffer_line(destination[X_AXIS],
-                         destination[Y_AXIS],
-                         destination[Z_AXIS] + peel_distance,
-                         destination[Z_AXIS] + peel_distance,
-                         peel_speed,
-                         active_extruder);
-
+        if(peel_distance > 0);
+        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + peel_distance, destination[Z_AXIS], peel_speed, active_extruder);
+        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + peel_distance, destination[Z_AXIS] + peel_distance, peel_speed, active_extruder);
         st_synchronize();
-
+        if(peel_pause > 0);
+        st_synchronize();
         codenum = peel_pause;
         codenum += millis();  // keep track of when we started waiting
         previous_millis_cmd = millis();
@@ -2596,25 +2578,23 @@ void process_commands()
             lcd_update();
         }
 
-        // Retract movement is done in two phases. First the Z axis
-        // moves down and then the E axis.
-        plan_buffer_line(destination[X_AXIS],
-                         destination[Y_AXIS],
-                         destination[Z_AXIS],
-                         destination[Z_AXIS] + peel_distance,
-                         retract_speed,
-                         active_extruder);
+        // Set new z axes destination
 
-        plan_buffer_line(destination[X_AXIS],
-                         destination[Y_AXIS],
-                         destination[Z_AXIS],
-                         destination[Z_AXIS],
-                         retract_speed,
-                         active_extruder);
+        destination[Z_AXIS] = layer_thickness + (axis_relative_modes[Z_AXIS] || relative_mode)*current_position[Z_AXIS];
+        if (destination[Z_AXIS] < min_pos[Z_AXIS]) destination[Z_AXIS] = min_pos[Z_AXIS];
+        if (destination[Z_AXIS] > max_pos[Z_AXIS]) destination[Z_AXIS] = max_pos[Z_AXIS];
 
+        // Move up by one layer thickness
+
+        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS]+ peel_distance, destination[Z_AXIS] + peel_distance, peel_speed, active_extruder);
         st_synchronize();
 
-        for(int8_t i = 0; i < NUM_AXIS; i++) {
+        // Retract movement is done in two phases. First the Z axis moves down and then the E axis.
+        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS] + peel_distance, retract_speed, active_extruder);
+        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS], retract_speed, active_extruder);
+        st_synchronize();
+
+        for(int8_t i=0; i < NUM_AXIS; i++) {
             current_position[i] = destination[i];
         }
     }
