@@ -2486,7 +2486,7 @@ void process_commands()
       }
       // Initialize tilted to false. The intent here is that you would send this command at the start of a print job, and
       // the platform would be level when you do. As such, we assume that you either hand-cranked it to level, or executed 
-      // an M655 command via manual GCode before running a new print job. If not, then the platform is currently tilted, and
+      // an M654 command via manual GCode before running a new print job. If not, then the platform is currently tilted, and
       // your print job is going to go poorly.
       tilted = false;
 
