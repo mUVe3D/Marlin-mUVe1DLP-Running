@@ -468,6 +468,10 @@ void setup()
   lcd_init();
   _delay_ms(1000);	// wait 1sec to display the splash screen
 
+#if defined(PROJECTOR_SERIAL_PORT) && defined(PROJECTOR_BAUDRATE)
+  PSerial.begin(PROJECTOR_SERIAL_PORT, PROJECTOR_BAUDRATE);
+#endif
+
   #if defined(CONTROLLERFAN_PIN) && CONTROLLERFAN_PIN > -1
     SET_OUTPUT(CONTROLLERFAN_PIN); //Set pin used for driver cooling fan
   #endif

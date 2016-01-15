@@ -35,6 +35,13 @@
   }
 #endif
 
+#if defined(P_USARTx_RX_vect)
+  ISR(P_USARTx_RX_vect)
+  {
+    PSerial.isr();
+  }
+#endif
+
 // Constructors ////////////////////////////////////////////////////////////////
 
 MarlinSerial::MarlinSerial()
@@ -367,6 +374,9 @@ void MarlinSerial::setRegisters(void)
 // Preinstantiate Objects //////////////////////////////////////////////////////
 
 MarlinSerial MSerial;
+#if defined (PROJECTOR_SERIAL_PORT)
+MarlinSerial PSerial;
+#endif
 
 #endif // whole file
 #endif // !AT90USB
