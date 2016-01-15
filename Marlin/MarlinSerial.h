@@ -41,21 +41,10 @@
 #define SERIAL_REGNAME_INTERNAL(registerbase,number,suffix) registerbase##number##suffix
 #endif
 
-// Registers used by MarlinSerial class (these are expanded 
-// depending on selected serial port
-#define M_UCSRxA SERIAL_REGNAME(UCSR,SERIAL_PORT,A) // defines M_UCSRxA to be UCSRnA where n is the serial port number
-#define M_UCSRxB SERIAL_REGNAME(UCSR,SERIAL_PORT,B) 
-#define M_RXENx SERIAL_REGNAME(RXEN,SERIAL_PORT,)    
-#define M_TXENx SERIAL_REGNAME(TXEN,SERIAL_PORT,)    
-#define M_RXCIEx SERIAL_REGNAME(RXCIE,SERIAL_PORT,)    
-#define M_UDREx SERIAL_REGNAME(UDRE,SERIAL_PORT,)    
-#define M_UDRx SERIAL_REGNAME(UDR,SERIAL_PORT,)  
-#define M_UBRRxH SERIAL_REGNAME(UBRR,SERIAL_PORT,H)
-#define M_UBRRxL SERIAL_REGNAME(UBRR,SERIAL_PORT,L)
-#define M_RXCx SERIAL_REGNAME(RXC,SERIAL_PORT,)
+// Interrupt vector for main serial port
+#ifdef SERIAL_PORT
 #define M_USARTx_RX_vect SERIAL_REGNAME(USART,SERIAL_PORT,_RX_vect)
-#define M_U2Xx SERIAL_REGNAME(U2X,SERIAL_PORT,)
-
+#endif
 
 
 #define DEC 10
@@ -80,16 +69,12 @@ struct ring_buffer
   int tail;
 };
 
-#if UART_PRESENT(SERIAL_PORT)
-  extern ring_buffer rx_buffer;
-#endif
-
 class MarlinSerial //: public Stream
 {
 
   public:
     MarlinSerial();
-    void begin(long);
+    void begin(byte, long);
     void end();
     int peek(void);
     int read(void);
@@ -102,17 +87,16 @@ class MarlinSerial //: public Stream
     
     FORCE_INLINE void write(uint8_t c)
     {
-      while (!((M_UCSRxA) & (1 << M_UDREx)))
+      while (!((*UCSRxA) & (1 << (UDREx))))
         ;
 
-      M_UDRx = c;
+      *UDRx = c;
     }
-    
     
     FORCE_INLINE void checkRx(void)
     {
-      if((M_UCSRxA & (1<<M_RXCx)) != 0) {
-        unsigned char c  =  M_UDRx;
+      if((*UCSRxA & (1 << RXCx)) != 0) {
+        unsigned char c = *UDRx;
         int i = (unsigned int)(rx_buffer.head + 1) % RX_BUFFER_SIZE;
 
         // if we should be storing the received character into the location
@@ -125,15 +109,33 @@ class MarlinSerial //: public Stream
         }
       }
     }
-    
-    
-    private:
-    void printNumber(unsigned long, uint8_t);
-    void printFloat(double, uint8_t);
-    
-    
-  public:
-    
+
+#if UART_PRESENT(SERIAL_PORT)
+    // Interrupt service routine. Only necessary if there is a real UART.
+    FORCE_INLINE void isr()
+    {
+      unsigned char c  =  *UDRx;
+      store_char(c);
+    }
+
+    // Helper for above, also only necessary if there is a real UART.
+    FORCE_INLINE void store_char(unsigned char c)
+    {
+        int i;
+        
+        i = (unsigned int)(rx_buffer.head + 1) % RX_BUFFER_SIZE;
+        
+        // if we should be storing the received character into the location
+        // just before the tail (meaning that the head would advance to the
+        // current location of the tail), we're about to overflow the buffer
+        // and so we don't write the character or advance the head.
+        if (i != rx_buffer.tail) {
+          rx_buffer.buffer[rx_buffer.head] = c;
+          rx_buffer.head = i;
+        }
+    }
+#endif
+
     FORCE_INLINE void write(const char *str)
     {
       while (*str)
@@ -176,6 +178,28 @@ class MarlinSerial //: public Stream
     void println(unsigned long, int = DEC);
     void println(double, int = 2);
     void println(void);
+
+    private:
+    void printNumber(unsigned long, uint8_t);
+    void printFloat(double, uint8_t);
+    void setRegisters(void);
+    byte portNum;
+
+#if UART_PRESENT(SERIAL_PORT)
+    ring_buffer rx_buffer;
+#endif
+
+    volatile uint8_t *UCSRxA;
+    volatile uint8_t *UCSRxB;
+    int RXENx;
+    int TXENx;
+    int RXCIEx;
+    int UDREx;
+    volatile uint8_t *UDRx;
+    volatile uint8_t *UBRRxH;
+    volatile uint8_t *UBRRxL;
+    int RXCx;
+    int U2Xx;
 };
 
 extern MarlinSerial MSerial;

@@ -419,7 +419,7 @@ void setup()
 {
   setup_killpin();
   setup_powerhold();
-  MYSERIAL.begin(BAUDRATE);
+  MYSERIAL.begin(SERIAL_PORT,BAUDRATE);
   SERIAL_PROTOCOLLNPGM("start");
   SERIAL_ECHO_START;
 

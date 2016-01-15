@@ -28,33 +28,10 @@
 // this is so I can support Attiny series and any other chip without a uart
 #if defined(UBRRH) || defined(UBRR0H) || defined(UBRR1H) || defined(UBRR2H) || defined(UBRR3H)
 
-#if UART_PRESENT(SERIAL_PORT)
-  ring_buffer rx_buffer  =  { { 0 }, 0, 0 };
-#endif
-
-FORCE_INLINE void store_char(unsigned char c)
-{
-  int i = (unsigned int)(rx_buffer.head + 1) % RX_BUFFER_SIZE;
-
-  // if we should be storing the received character into the location
-  // just before the tail (meaning that the head would advance to the
-  // current location of the tail), we're about to overflow the buffer
-  // and so we don't write the character or advance the head.
-  if (i != rx_buffer.tail) {
-    rx_buffer.buffer[rx_buffer.head] = c;
-    rx_buffer.head = i;
-  }
-}
-
-
-//#elif defined(SIG_USART_RECV)
 #if defined(M_USARTx_RX_vect)
-  // fixed by Mark Sproul this is on the 644/644p
-  //SIGNAL(SIG_USART_RECV)
   SIGNAL(M_USARTx_RX_vect)
   {
-    unsigned char c  =  M_UDRx;
-    store_char(c);
+    MSerial.isr();
   }
 #endif
 
@@ -62,15 +39,17 @@ FORCE_INLINE void store_char(unsigned char c)
 
 MarlinSerial::MarlinSerial()
 {
-
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
 
-void MarlinSerial::begin(long baud)
+void MarlinSerial::begin(byte _portNum, long baud)
 {
   uint16_t baud_setting;
   bool useU2X = true;
+  portNum = _portNum;
+
+  setRegisters();
 
 #if F_CPU == 16000000UL && SERIAL_PORT == 0
   // hardcoded exception for compatibility with the bootloader shipped
@@ -82,30 +61,28 @@ void MarlinSerial::begin(long baud)
 #endif
   
   if (useU2X) {
-    M_UCSRxA = 1 << M_U2Xx;
+    *UCSRxA = 1 << U2Xx;
     baud_setting = (F_CPU / 4 / baud - 1) / 2;
   } else {
-    M_UCSRxA = 0;
+    *UCSRxA = 0;
     baud_setting = (F_CPU / 8 / baud - 1) / 2;
   }
 
   // assign the baud_setting, a.k.a. ubbr (USART Baud Rate Register)
-  M_UBRRxH = baud_setting >> 8;
-  M_UBRRxL = baud_setting;
+  *UBRRxH = baud_setting >> 8;
+  *UBRRxL = baud_setting;
 
-  sbi(M_UCSRxB, M_RXENx);
-  sbi(M_UCSRxB, M_TXENx);
-  sbi(M_UCSRxB, M_RXCIEx);
+  sbi(*UCSRxB, RXENx);
+  sbi(*UCSRxB, TXENx);
+  sbi(*UCSRxB, RXCIEx);
 }
 
 void MarlinSerial::end()
 {
-  cbi(M_UCSRxB, M_RXENx);
-  cbi(M_UCSRxB, M_TXENx);
-  cbi(M_UCSRxB, M_RXCIEx);  
+  cbi(*UCSRxB, RXENx);
+  cbi(*UCSRxB, TXENx);
+  cbi(*UCSRxB, RXCIEx);
 }
-
-
 
 int MarlinSerial::peek(void)
 {
@@ -142,13 +119,7 @@ void MarlinSerial::flush()
   rx_buffer.head = rx_buffer.tail;
 }
 
-
-
-
 /// imports from print.h
-
-
-
 
 void MarlinSerial::print(char c, int base)
 {
@@ -313,8 +284,87 @@ void MarlinSerial::printFloat(double number, uint8_t digits)
     remainder -= toPrint; 
   } 
 }
-// Preinstantiate Objects //////////////////////////////////////////////////////
 
+void MarlinSerial::setRegisters(void)
+{
+    // Note that we can't just use portNum in SERIAL_REGNAME because
+    // it needs to be known at compile time. As such, use this as an
+    // abstraction collected all in one spot so that this class can
+    // have multiple instances, each of which can drive a separate
+    // serial port.
+
+    switch(portNum) {
+    case 0:
+        UCSRxA = &SERIAL_REGNAME(UCSR,0,A);
+        UCSRxB = &SERIAL_REGNAME(UCSR,0,B);
+        RXENx = SERIAL_REGNAME(RXEN,0,);
+        TXENx = SERIAL_REGNAME(TXEN,0,);
+        RXCIEx = SERIAL_REGNAME(RXCIE,0,);
+        UDREx = SERIAL_REGNAME(UDRE,0,);
+        UDRx = &SERIAL_REGNAME(UDR,0,);
+        UBRRxH = &SERIAL_REGNAME(UBRR,0,H);
+        UBRRxL = &SERIAL_REGNAME(UBRR,0,L);
+        RXCx = SERIAL_REGNAME(RXC,0,);
+        U2Xx = SERIAL_REGNAME(U2X,0,);
+        break;
+    case 1:
+        UCSRxA = &SERIAL_REGNAME(UCSR,1,A);
+        UCSRxB = &SERIAL_REGNAME(UCSR,1,B);
+        RXENx = SERIAL_REGNAME(RXEN,1,);
+        TXENx = SERIAL_REGNAME(TXEN,1,);
+        RXCIEx = SERIAL_REGNAME(RXCIE,1,);
+        UDREx = SERIAL_REGNAME(UDRE,1,);
+        UDRx = &SERIAL_REGNAME(UDR,1,);
+        UBRRxH = &SERIAL_REGNAME(UBRR,1,H);
+        UBRRxL = &SERIAL_REGNAME(UBRR,1,L);
+        RXCx = SERIAL_REGNAME(RXC,1,);
+        U2Xx = SERIAL_REGNAME(U2X,1,);
+        break;
+    case 2:
+        UCSRxA = &SERIAL_REGNAME(UCSR,2,A);
+        UCSRxB = &SERIAL_REGNAME(UCSR,2,B);
+        RXENx = SERIAL_REGNAME(RXEN,2,);
+        TXENx = SERIAL_REGNAME(TXEN,2,);
+        RXCIEx = SERIAL_REGNAME(RXCIE,2,);
+        UDREx = SERIAL_REGNAME(UDRE,2,);
+        UDRx = &SERIAL_REGNAME(UDR,2,);
+        UBRRxH = &SERIAL_REGNAME(UBRR,2,H);
+        UBRRxL = &SERIAL_REGNAME(UBRR,2,L);
+        RXCx = SERIAL_REGNAME(RXC,2,);
+        U2Xx = SERIAL_REGNAME(U2X,2,);
+        break;
+    case 3:
+        UCSRxA = &SERIAL_REGNAME(UCSR,3,A);
+        UCSRxB = &SERIAL_REGNAME(UCSR,3,B);
+        RXENx = SERIAL_REGNAME(RXEN,3,);
+        TXENx = SERIAL_REGNAME(TXEN,3,);
+        RXCIEx = SERIAL_REGNAME(RXCIE,3,);
+        UDREx = SERIAL_REGNAME(UDRE,3,);
+        UDRx = &SERIAL_REGNAME(UDR,3,);
+        UBRRxH = &SERIAL_REGNAME(UBRR,3,H);
+        UBRRxL = &SERIAL_REGNAME(UBRR,3,L);
+        RXCx = SERIAL_REGNAME(RXC,3,);
+        U2Xx = SERIAL_REGNAME(U2X,3,);
+        break;
+    default:
+        // Unknown serial port. This will therefore dereference a
+        // null pointer and do bad things.
+        UCSRxA = 0;
+        UCSRxB = 0;
+        RXENx = 0;
+        TXENx = 0;
+        RXCIEx = 0;
+        UDREx = 0;
+        UDRx = 0;
+        UBRRxH = 0;
+        UBRRxL = 0;
+        RXCx = 0;
+        U2Xx = 0;
+        break;
+    }
+}
+
+// Preinstantiate Objects //////////////////////////////////////////////////////
 
 MarlinSerial MSerial;
 
