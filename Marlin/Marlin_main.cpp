@@ -2710,6 +2710,9 @@ void process_commands()
         for(int8_t i=0; i < NUM_AXIS; i++) {
             current_position[i] = destination[i];
         }
+
+        SERIAL_ECHOLNPGM("Z_move_comp");
+        st_synchronize();
     }
     break;
     
