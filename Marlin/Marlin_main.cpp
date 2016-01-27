@@ -154,6 +154,7 @@
 // M652 - [mUVe3D] - Turn off laser now
 // M653 - [mUVe3D] - Execute tilt move
 // M654 - [mUVe3D] - Execute untilt move
+// M655 - [mUVe3D] - Projector control
 // M907 - Set digital trimpot motor current using axis codes.
 // M908 - Control digital trimpot directly.
 // M350 - Set microstepping mode.
@@ -420,7 +421,7 @@ void setup()
 {
   setup_killpin();
   setup_powerhold();
-  MYSERIAL.begin(BAUDRATE);
+  MYSERIAL.begin(SERIAL_PORT,BAUDRATE);
   SERIAL_PROTOCOLLNPGM("start");
   SERIAL_ECHO_START;
 
@@ -468,6 +469,10 @@ void setup()
 
   lcd_init();
   _delay_ms(1000);	// wait 1sec to display the splash screen
+
+#if defined(PROJECTOR_SERIAL_PORT) && defined(PROJECTOR_BAUDRATE)
+  PSerial.begin(PROJECTOR_SERIAL_PORT, PROJECTOR_BAUDRATE);
+#endif
 
   #if defined(CONTROLLERFAN_PIN) && CONTROLLERFAN_PIN > -1
     SET_OUTPUT(CONTROLLERFAN_PIN); //Set pin used for driver cooling fan
@@ -1009,6 +1014,8 @@ void process_commands()
       if(Stopped == false) {
         get_coordinates(); // For X Y Z E F        
         prepare_move();
+        SERIAL_ECHOLNPGM("Z_move_comp");
+        st_synchronize();
         //ClearToSend();
         return;
       }
@@ -2554,6 +2561,113 @@ void process_commands()
            st_synchronize();
            tilted = false;
         }
+    }
+    break;
+
+    case 655: // M655 - send projector control commands via bitbanged
+              // serial level shifter.
+    {
+        int tempVal = -1;
+        
+        // Viewsonic commands
+        if(code_seen('V')) {
+            tempVal = (float) code_value();
+
+            switch(tempVal)
+            {
+            case 0: // Power Off
+                {
+                    // 0614000400341101005E
+                    const byte off[] = {0x06, 0x14, 0x00, 0x04, 0x00, 
+                                        0x34, 0x11, 0x01, 0x00, 0x5E};
+                    PSerial.write(off, sizeof(off));
+                }
+                break;
+            case 1: // Power On
+                {
+                    // 0614000400341100005D
+                    const byte on[] = {0x06, 0x14, 0x00, 0x04, 0x00,
+                                       0x34, 0x11, 0x00, 0x00, 0x5D};
+                    PSerial.write(on, sizeof(on));
+                }
+                break;
+            case 2: // Factory Reset
+                {
+                    // 0614000400341102005F
+                    const byte reset[] = {0x06, 0x14, 0x00, 0x04, 0x00,
+                                          0x34, 0x11, 0x02, 0x00, 0x5F};
+                    PSerial.write(reset, sizeof(reset));
+                }
+                break;
+            case 3: // Splash Screen Black
+                {
+                    // 061400040034110A0067
+                    const byte blackScreen[] = {0x06, 0x14, 0x00, 0x04, 0x00,
+                                                0x34, 0x11, 0x0A, 0x00, 0x67};
+                    PSerial.write(blackScreen, sizeof(blackScreen));
+                }
+                break;
+            case 4: // High Altitude On
+                {
+                    // 061400040034110C016A
+                    const byte HAOn[] = {0x06, 0x14, 0x00, 0x04, 0x00,
+                                         0x34, 0x11, 0x0C, 0x01, 0x6A};
+                    PSerial.write(HAOn, sizeof(HAOn));
+                }
+                break;
+            case 5: // High Altitude Off
+                {
+                    // 061400040034110C0069
+                    const byte HAOff[] = {0x06, 0x14, 0x00, 0x04, 0x00,
+                                          0x34, 0x11, 0x0C, 0x00, 0x69};
+                    PSerial.write(HAOff, sizeof(HAOff));
+                }
+                break;
+            case 6: // Lamp Mode Normal
+                {
+                    // 0614000400341110006D
+                    const byte lampNormal[] = {0x06, 0x14, 0x00, 0x04, 0x00,
+                                               0x34, 0x11, 0x10, 0x00, 0x6D};
+                    PSerial.write(lampNormal, sizeof(lampNormal));
+                }
+                break;
+            case 7: // Contrast Decrease
+                {
+                    // 06140004003412020060
+                    const byte contDec[] = {0x06, 0x14, 0x00, 0x04, 0x00,
+                                            0x34, 0x12, 0x02, 0x00, 0x60};
+                    PSerial.write(contDec, sizeof(contDec));
+                }
+                break;
+            case 8: // Contrast Increase
+                {
+                    // 06140004003412020161
+                    const byte contInc[] = {0x06, 0x14, 0x00, 0x04, 0x00,
+                                            0x34, 0x12, 0x02, 0x01, 0x61};
+                    PSerial.write(contInc, sizeof(contInc));
+                }
+                break;
+            case 9: // Brightness Decrease
+                {
+                    // 06140004003412030061
+                    const byte brightDec[] = {0x06, 0x14, 0x00, 0x04, 0x00,
+                                              0x34, 0x12, 0x03, 0x00, 0x61};
+                    PSerial.write(brightDec, sizeof(brightDec));
+                }
+                break;
+            case 10: // Brightness Increase
+                {
+                    // 06140004003412030162
+                    const byte brightInc[] = {0x06, 0x14, 0x00, 0x04, 0x00,
+                                              0x34, 0x12, 0x03, 0x01, 0x62};
+                    PSerial.write(brightInc, sizeof(brightInc));
+                }
+                break;
+
+            // Other commands go here.
+            }
+        }
+        // Other projector models go here
     }
     break;
 
