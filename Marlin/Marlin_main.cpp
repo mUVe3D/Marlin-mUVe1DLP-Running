@@ -237,7 +237,7 @@ static float peel_pause = 0; //Used by mUVe 3D Peel Control
 static float laser_power = 0; //Used by mUVe 3D laser Control
 static float retract_speed = 0; //Used by mUVe 3D Peel Control
 static float tilt_distance = 0; //Used by mUVe 3D Tilt Control
-static float layer_thickness = 0; //Used by mUVe 3D M655 modified Peel
+static float layer_thickness = 0; //Used by mUVe 3D M699 modified Peel
 static bool tilted = false; // Whether we're currently tilted. Sending the command again will tell us to un-tilt.
 static float offset[3] = {0.0, 0.0, 0.0};
 static bool home_all_axis = true;
@@ -2557,7 +2557,7 @@ void process_commands()
     }
     break;
 
-    case 655: // M655: Modified version of the M651. Functions: peel
+    case 699: // M699: Modified version of the M651. Functions: peel
               // move and add layer. No need for G1.
     {
         st_synchronize();
