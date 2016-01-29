@@ -2555,8 +2555,8 @@ void process_commands()
     }
     break;
 
-    case 655: // M655 - send projector control commands via bitbanged
-              // serial level shifter.
+    case 655: // M655 - send projector control commands via serial
+              // level shifter hooked to predefined UART
     {
         int tempVal = -1;
         
