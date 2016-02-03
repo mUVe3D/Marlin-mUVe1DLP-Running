@@ -238,7 +238,7 @@ static float peel_pause = 0; //Used by mUVe 3D Peel Control
 static float laser_power = 0; //Used by mUVe 3D laser Control
 static float retract_speed = 0; //Used by mUVe 3D Peel Control
 static float tilt_distance = 0; //Used by mUVe 3D Tilt Control
-static float layer_thickness = 0; //Used by mUVe 3D M699 modified Peel
+static float layer_thickness = 0; //Used by mUVe 3D Peel Control
 static bool tilted = false; // Whether we're currently tilted. Sending the command again will tell us to un-tilt.
 static float offset[3] = {0.0, 0.0, 0.0};
 static bool home_all_axis = true;
@@ -2501,29 +2501,53 @@ void process_commands()
           layer_thickness = (float) code_value();
       }
       else {
-          layer_thickness = 0.05;
+          layer_thickness = 0;
       }
     }
     break;
     
-    case 651: // M651 run peel move
+    case 651: // M651 run peel move and return back down 1 layer
+              // higher. No need for G1 as long as you set H > 0 in M650.
     {
-      if(peel_distance > 0);
+        st_synchronize();
+
+        if(peel_distance > 0);
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + peel_distance, destination[Z_AXIS], peel_speed, active_extruder);
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + peel_distance, destination[Z_AXIS] + peel_distance, peel_speed, active_extruder);
         st_synchronize();
-      if(peel_pause > 0);
+        if(peel_pause > 0);
         st_synchronize();
         codenum = peel_pause;
         codenum += millis();  // keep track of when we started waiting
         previous_millis_cmd = millis();
+
         while(millis()  < codenum ){
-        manage_heater();
-        manage_inactivity();
-        lcd_update();      
-      }
-    
+            manage_heater();
+            manage_inactivity();
+            lcd_update();
+        }
+
+        // Set new z axes destination
+
+        destination[Z_AXIS] = layer_thickness + (axis_relative_modes[Z_AXIS] || relative_mode)*current_position[Z_AXIS];
+        if (destination[Z_AXIS] < min_pos[Z_AXIS]) destination[Z_AXIS] = min_pos[Z_AXIS];
+        if (destination[Z_AXIS] > max_pos[Z_AXIS]) destination[Z_AXIS] = max_pos[Z_AXIS];
+
+        // Move up by one layer thickness
+
+        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS]+ peel_distance, destination[Z_AXIS] + peel_distance, peel_speed, active_extruder);
+        st_synchronize();
+
+        // Retract movement is done in two phases. First the Z axis moves down and then the E axis.
+        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS] + peel_distance, retract_speed, active_extruder);
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS], retract_speed, active_extruder);
+        st_synchronize();
+
+        for(int8_t i=0; i < NUM_AXIS; i++) {
+            current_position[i] = destination[i];
+        }
+
+        SERIAL_ECHOLNPGM("Z_move_comp");
         st_synchronize();
     }
     break;
@@ -2670,52 +2694,6 @@ void process_commands()
     }
     break;
 
-    case 699: // M699: Modified version of the M651. Functions: peel
-              // move and add layer. No need for G1.
-    {
-        st_synchronize();
-
-        if(peel_distance > 0);
-        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + peel_distance, destination[Z_AXIS], peel_speed, active_extruder);
-        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + peel_distance, destination[Z_AXIS] + peel_distance, peel_speed, active_extruder);
-        st_synchronize();
-        if(peel_pause > 0);
-        st_synchronize();
-        codenum = peel_pause;
-        codenum += millis();  // keep track of when we started waiting
-        previous_millis_cmd = millis();
-
-        while(millis()  < codenum ){
-            manage_heater();
-            manage_inactivity();
-            lcd_update();
-        }
-
-        // Set new z axes destination
-
-        destination[Z_AXIS] = layer_thickness + (axis_relative_modes[Z_AXIS] || relative_mode)*current_position[Z_AXIS];
-        if (destination[Z_AXIS] < min_pos[Z_AXIS]) destination[Z_AXIS] = min_pos[Z_AXIS];
-        if (destination[Z_AXIS] > max_pos[Z_AXIS]) destination[Z_AXIS] = max_pos[Z_AXIS];
-
-        // Move up by one layer thickness
-
-        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS]+ peel_distance, destination[Z_AXIS] + peel_distance, peel_speed, active_extruder);
-        st_synchronize();
-
-        // Retract movement is done in two phases. First the Z axis moves down and then the E axis.
-        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS] + peel_distance, retract_speed, active_extruder);
-        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS], retract_speed, active_extruder);
-        st_synchronize();
-
-        for(int8_t i=0; i < NUM_AXIS; i++) {
-            current_position[i] = destination[i];
-        }
-
-        SERIAL_ECHOLNPGM("Z_move_comp");
-        st_synchronize();
-    }
-    break;
-    
     case 907: // M907 Set digital trimpot motor current using axis codes.
     {
       #if defined(DIGIPOTSS_PIN) && DIGIPOTSS_PIN > -1
