@@ -2511,17 +2511,16 @@ void process_commands()
     {
         st_synchronize();
 
-        if(peel_distance > 0);
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + peel_distance, destination[Z_AXIS], peel_speed, active_extruder);
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + peel_distance, destination[Z_AXIS] + peel_distance, peel_speed, active_extruder);
+
         st_synchronize();
-        if(peel_pause > 0);
-        st_synchronize();
+
         codenum = peel_pause;
         codenum += millis();  // keep track of when we started waiting
         previous_millis_cmd = millis();
 
-        while(millis()  < codenum ){
+        while (millis()  < codenum ) {
             manage_heater();
             manage_inactivity();
             lcd_update();
@@ -2536,14 +2535,16 @@ void process_commands()
         // Move up by one layer thickness
 
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS]+ peel_distance, destination[Z_AXIS] + peel_distance, peel_speed, active_extruder);
+
         st_synchronize();
 
         // Retract movement is done in two phases. First the Z axis moves down and then the E axis.
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS] + peel_distance, retract_speed, active_extruder);
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS], retract_speed, active_extruder);
+
         st_synchronize();
 
-        for(int8_t i=0; i < NUM_AXIS; i++) {
+        for (int8_t i=0; i < NUM_AXIS; i++) {
             current_position[i] = destination[i];
         }
 
