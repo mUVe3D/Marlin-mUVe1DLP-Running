@@ -2,9 +2,11 @@ All implemented and working! See mUVe 3D's Custom printer control Machine Codes,
 
 Installation Instructions: http://www.muve3d.net/press/supportsources/muve-1-software/
 
-M650 D P R S T- 
+M650 D H P R S T- 
 
 	D - Set Distance in mm - Set to 0 to remove the peel
+	
+	H - Layer Height - Set in mm - Default 0 - Remove the current layer height from the peel retract. Useful to combine next layer motion with the peel.
 	
 	R - Set Speed in mm/s - Retract speed of the peel
 
@@ -15,7 +17,7 @@ M650 D P R S T-
 	T - Tilt option for post print resin draining. Default 20 mm, values sent in mm
 
 
-Example: M650 D2 P500 R3 S2 T10- Peel distance 2mm, pause .5 seconds, peel speed 2 mm/s, retract speed 3mm/s, Post Print Tilt 10mm
+Example: M650 D2 H0.1 P500 R3 S2 T10- Peel distance 2mm, layer height .1mm/100 micron, pause .5 seconds, peel speed 2 mm/s, retract speed 3mm/s, Post Print Tilt 10mm
 
 M651 - Initiate the peel move with the settings chosen.
 
