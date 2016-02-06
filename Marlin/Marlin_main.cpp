@@ -154,6 +154,7 @@
 // M652 - [mUVe3D] - Turn off laser now
 // M653 - [mUVe3D] - Execute tilt move
 // M654 - [mUVe3D] - Execute untilt move
+// M655 - [mUVe3D] - Projector control
 // M907 - Set digital trimpot motor current using axis codes.
 // M908 - Control digital trimpot directly.
 // M350 - Set microstepping mode.
@@ -237,6 +238,7 @@ static float peel_pause = 0; //Used by mUVe 3D Peel Control
 static float laser_power = 0; //Used by mUVe 3D laser Control
 static float retract_speed = 0; //Used by mUVe 3D Peel Control
 static float tilt_distance = 0; //Used by mUVe 3D Tilt Control
+static float layer_thickness = 0; //Used by mUVe 3D Peel Control
 static bool tilted = false; // Whether we're currently tilted. Sending the command again will tell us to un-tilt.
 static float offset[3] = {0.0, 0.0, 0.0};
 static bool home_all_axis = true;
@@ -419,7 +421,7 @@ void setup()
 {
   setup_killpin();
   setup_powerhold();
-  MYSERIAL.begin(BAUDRATE);
+  MYSERIAL.begin(SERIAL_PORT,BAUDRATE);
   SERIAL_PROTOCOLLNPGM("start");
   SERIAL_ECHO_START;
 
@@ -467,6 +469,10 @@ void setup()
 
   lcd_init();
   _delay_ms(1000);	// wait 1sec to display the splash screen
+
+#if defined(PROJECTOR_SERIAL_PORT) && defined(PROJECTOR_BAUDRATE)
+  PSerial.begin(PROJECTOR_SERIAL_PORT, PROJECTOR_BAUDRATE);
+#endif
 
   #if defined(CONTROLLERFAN_PIN) && CONTROLLERFAN_PIN > -1
     SET_OUTPUT(CONTROLLERFAN_PIN); //Set pin used for driver cooling fan
@@ -2487,30 +2493,62 @@ void process_commands()
       }
       // Initialize tilted to false. The intent here is that you would send this command at the start of a print job, and
       // the platform would be level when you do. As such, we assume that you either hand-cranked it to level, or executed 
-      // an M655 command via manual GCode before running a new print job. If not, then the platform is currently tilted, and
+      // an M654 command via manual GCode before running a new print job. If not, then the platform is currently tilted, and
       // your print job is going to go poorly.
       tilted = false;
+
+      if (code_seen('H')) {
+          layer_thickness = (float) code_value();
+      }
+      else {
+          layer_thickness = 0;
+      }
     }
     break;
     
-    case 651: // M651 run peel move
+    case 651: // M651 run peel move and return back down 1 layer
+              // higher. No need for G1 as long as you set H > 0 in M650.
     {
-      if(peel_distance > 0);
+        st_synchronize();
+
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + peel_distance, destination[Z_AXIS], peel_speed, active_extruder);
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + peel_distance, destination[Z_AXIS] + peel_distance, peel_speed, active_extruder);
+
         st_synchronize();
-      if(peel_pause > 0);
-        st_synchronize();
+
         codenum = peel_pause;
         codenum += millis();  // keep track of when we started waiting
         previous_millis_cmd = millis();
-        while(millis()  < codenum ){
-        manage_heater();
-        manage_inactivity();
-        lcd_update();      
-      }
-    
+
+        while (millis()  < codenum ) {
+            manage_heater();
+            manage_inactivity();
+            lcd_update();
+        }
+
+        // Set new z axes destination
+
+        destination[Z_AXIS] = layer_thickness + (axis_relative_modes[Z_AXIS] || relative_mode)*current_position[Z_AXIS];
+        if (destination[Z_AXIS] < min_pos[Z_AXIS]) destination[Z_AXIS] = min_pos[Z_AXIS];
+        if (destination[Z_AXIS] > max_pos[Z_AXIS]) destination[Z_AXIS] = max_pos[Z_AXIS];
+
+        // Move up by one layer thickness
+
+        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS]+ peel_distance, destination[Z_AXIS] + peel_distance, peel_speed, active_extruder);
+
+        st_synchronize();
+
+        // Retract movement is done in two phases. First the Z axis moves down and then the E axis.
+        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS] + peel_distance, retract_speed, active_extruder);
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS], retract_speed, active_extruder);
+
+        st_synchronize();
+
+        for (int8_t i=0; i < NUM_AXIS; i++) {
+            current_position[i] = destination[i];
+        }
+
+        SERIAL_ECHOLNPGM("Z_move_comp");
         st_synchronize();
     }
     break;
@@ -2549,7 +2587,114 @@ void process_commands()
         }
     }
     break;
-    
+
+    case 655: // M655 - send projector control commands via serial
+              // level shifter hooked to predefined UART
+    {
+        int tempVal = -1;
+        
+        // Viewsonic commands
+        if(code_seen('V')) {
+            tempVal = (float) code_value();
+
+            switch(tempVal)
+            {
+            case 0: // Power Off
+                {
+                    // 0614000400341101005E
+                    const byte off[] = {0x06, 0x14, 0x00, 0x04, 0x00, 
+                                        0x34, 0x11, 0x01, 0x00, 0x5E};
+                    PSerial.write(off, sizeof(off));
+                }
+                break;
+            case 1: // Power On
+                {
+                    // 0614000400341100005D
+                    const byte on[] = {0x06, 0x14, 0x00, 0x04, 0x00,
+                                       0x34, 0x11, 0x00, 0x00, 0x5D};
+                    PSerial.write(on, sizeof(on));
+                }
+                break;
+            case 2: // Factory Reset
+                {
+                    // 0614000400341102005F
+                    const byte reset[] = {0x06, 0x14, 0x00, 0x04, 0x00,
+                                          0x34, 0x11, 0x02, 0x00, 0x5F};
+                    PSerial.write(reset, sizeof(reset));
+                }
+                break;
+            case 3: // Splash Screen Black
+                {
+                    // 061400040034110A0067
+                    const byte blackScreen[] = {0x06, 0x14, 0x00, 0x04, 0x00,
+                                                0x34, 0x11, 0x0A, 0x00, 0x67};
+                    PSerial.write(blackScreen, sizeof(blackScreen));
+                }
+                break;
+            case 4: // High Altitude On
+                {
+                    // 061400040034110C016A
+                    const byte HAOn[] = {0x06, 0x14, 0x00, 0x04, 0x00,
+                                         0x34, 0x11, 0x0C, 0x01, 0x6A};
+                    PSerial.write(HAOn, sizeof(HAOn));
+                }
+                break;
+            case 5: // High Altitude Off
+                {
+                    // 061400040034110C0069
+                    const byte HAOff[] = {0x06, 0x14, 0x00, 0x04, 0x00,
+                                          0x34, 0x11, 0x0C, 0x00, 0x69};
+                    PSerial.write(HAOff, sizeof(HAOff));
+                }
+                break;
+            case 6: // Lamp Mode Normal
+                {
+                    // 0614000400341110006D
+                    const byte lampNormal[] = {0x06, 0x14, 0x00, 0x04, 0x00,
+                                               0x34, 0x11, 0x10, 0x00, 0x6D};
+                    PSerial.write(lampNormal, sizeof(lampNormal));
+                }
+                break;
+            case 7: // Contrast Decrease
+                {
+                    // 06140004003412020060
+                    const byte contDec[] = {0x06, 0x14, 0x00, 0x04, 0x00,
+                                            0x34, 0x12, 0x02, 0x00, 0x60};
+                    PSerial.write(contDec, sizeof(contDec));
+                }
+                break;
+            case 8: // Contrast Increase
+                {
+                    // 06140004003412020161
+                    const byte contInc[] = {0x06, 0x14, 0x00, 0x04, 0x00,
+                                            0x34, 0x12, 0x02, 0x01, 0x61};
+                    PSerial.write(contInc, sizeof(contInc));
+                }
+                break;
+            case 9: // Brightness Decrease
+                {
+                    // 06140004003412030061
+                    const byte brightDec[] = {0x06, 0x14, 0x00, 0x04, 0x00,
+                                              0x34, 0x12, 0x03, 0x00, 0x61};
+                    PSerial.write(brightDec, sizeof(brightDec));
+                }
+                break;
+            case 10: // Brightness Increase
+                {
+                    // 06140004003412030162
+                    const byte brightInc[] = {0x06, 0x14, 0x00, 0x04, 0x00,
+                                              0x34, 0x12, 0x03, 0x01, 0x62};
+                    PSerial.write(brightInc, sizeof(brightInc));
+                }
+                break;
+
+            // Other commands go here.
+            }
+        }
+        // Other projector models go here
+    }
+    break;
+
     case 907: // M907 Set digital trimpot motor current using axis codes.
     {
       #if defined(DIGIPOTSS_PIN) && DIGIPOTSS_PIN > -1

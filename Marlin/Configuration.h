@@ -27,6 +27,13 @@
 //#define BAUDRATE 250000
 #define BAUDRATE 115200
 
+// PROJECTOR_SERIAL_PORT selects which serial port should be used to
+// control a projector.
+#define PROJECTOR_SERIAL_PORT 2
+
+// This determines the communication speed of the projector
+#define PROJECTOR_BAUDRATE 115200
+
 //// The following define selects which electronics board you have. Please choose the one that matches your setup
 // 10 = Gen7 custom (Alfons3 Version) "https://github.com/Alfons3/Generation_7_Electronics"
 // 11 = Gen7 v1.1, v1.2 = 11
@@ -591,6 +598,10 @@ const bool Z_MAX_ENDSTOP_INVERTING = false; // set to true to invert the logic o
 
 #include "Configuration_adv.h"
 #include "thermistortables.h"
+
+#if defined(PROJECTOR_SERIAL_PORT) && PROJECTOR_SERIAL_PORT == 2 && defined(NEWPANEL)
+    #error Oops! NEWPANEL style LCD panel is incompatible with using SERIAL_PORT2
+#endif
 
 #endif //__CONFIGURATION_H
 
