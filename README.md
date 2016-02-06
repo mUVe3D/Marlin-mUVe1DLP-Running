@@ -30,16 +30,27 @@ M654 - Restore from tilt, this is sent manually to place the build stage back at
 M655 - Early testing, Use RS232 Shifter to control ViewSonic Projector, Pin 16 to TX, Pin 17 to RX, 5V and GND must also be supplied to shifter
 
 M655 V0 - Power Off
+
 M655 V1 - Power On
+
 M655 V2 - Factory Reset
+
 M655 V3 - Blank Splash Screen
+
 M655 V4 - High Altitude On
+
 M655 V5 - High Alititude Off
+
 M655 V6 - Lamp Mode Normal
+
 M655 V7 - Contrast Decrease
+
 M655 V8 - Contrast Increase
+
 M655 V9 - Brightness Decrease
+
 M655 V10 - Brightness Increase
+
 
 ==========================
 Marlin 3D Printer Firmware
