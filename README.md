@@ -2,6 +2,14 @@ All implemented and working! See mUVe 3D's Custom printer control Machine Codes,
 
 Installation Instructions: http://www.muve3d.net/press/supportsources/muve-1-software/
 
+*IMPORTANT* If you have the new pre-soldered endstop you will need to change the following line in the configuration.h file before uploading otherwise your Z endstop won't work correctly. In a few months this will be changed to the default as all new machines will be sent with pre-wired endstops in the future.
+
+Original:
+const bool Z_MIN_ENDSTOP_INVERTING = false;
+
+Change to:
+const bool Z_MIN_ENDSTOP_INVERTING = true;
+
 M650 D H P R S T- 
 
 	D - Set Distance in mm - Set to 0 to remove the peel
