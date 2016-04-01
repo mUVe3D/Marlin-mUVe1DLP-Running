@@ -10,11 +10,9 @@ const bool Z_MIN_ENDSTOP_INVERTING = false;
 Change to:
 const bool Z_MIN_ENDSTOP_INVERTING = true;
 
-M650 D H P R S T- 
+M650 D P R S T- 
 
 	D - Set Distance in mm - Set to 0 to remove the peel
-	
-	H - Layer Height - Set in mm - Default 0 - Remove the current layer height from the peel retract. Useful to combine next layer motion with the peel.
 	
 	R - Set Speed in mm/s - Retract speed of the peel
 
