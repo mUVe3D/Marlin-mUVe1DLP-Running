@@ -2506,51 +2506,24 @@ void process_commands()
     }
     break;
     
-    case 651: // M651 run peel move and return back down 1 layer
-              // higher. No need for G1 as long as you set H > 0 in M650.
+    case 651: // M651 run peel move and return back to start.
     {
-        st_synchronize();
-
+      if(peel_distance > 0);
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + peel_distance, destination[Z_AXIS], peel_speed, active_extruder);
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + peel_distance, destination[Z_AXIS] + peel_distance, peel_speed, active_extruder);
-
         st_synchronize();
-
+      if(peel_pause > 0);
+        st_synchronize();
         codenum = peel_pause;
         codenum += millis();  // keep track of when we started waiting
         previous_millis_cmd = millis();
-
-        while (millis()  < codenum ) {
-            manage_heater();
-            manage_inactivity();
-            lcd_update();
-        }
-
-        // Set new z axes destination
-
-        destination[Z_AXIS] = layer_thickness + (axis_relative_modes[Z_AXIS] || relative_mode)*current_position[Z_AXIS];
-        if (destination[Z_AXIS] < min_pos[Z_AXIS]) destination[Z_AXIS] = min_pos[Z_AXIS];
-        if (destination[Z_AXIS] > max_pos[Z_AXIS]) destination[Z_AXIS] = max_pos[Z_AXIS];
-
-        // Move up by one layer thickness
-
-        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS]+ peel_distance, destination[Z_AXIS] + peel_distance, peel_speed, active_extruder);
-
-        st_synchronize();
-
-        // Retract movement is done in two phases. First the Z axis moves down and then the E axis.
-        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS] + peel_distance, retract_speed, active_extruder);
+        while(millis()  < codenum ){
+        manage_heater();
+        manage_inactivity();
+        lcd_update();      
+      }
+    
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS], retract_speed, active_extruder);
-
-        st_synchronize();
-
-        for (int8_t i=0; i < NUM_AXIS; i++) {
-            current_position[i] = destination[i];
-        }
-	
-	if(layer_thickness > 0) {
-        	SERIAL_ECHOLNPGM("Z_move_comp");
-	}	
         st_synchronize();
     }
     break;
