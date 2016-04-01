@@ -2527,16 +2527,17 @@ void process_commands()
         }
 
         // Set new z axes destination
+        if (layer_thickness > 0) {
+            destination[Z_AXIS] = layer_thickness + (axis_relative_modes[Z_AXIS] || relative_mode)*current_position[Z_AXIS];
+            if (destination[Z_AXIS] < min_pos[Z_AXIS]) destination[Z_AXIS] = min_pos[Z_AXIS];
+            if (destination[Z_AXIS] > max_pos[Z_AXIS]) destination[Z_AXIS] = max_pos[Z_AXIS];
 
-        destination[Z_AXIS] = layer_thickness + (axis_relative_modes[Z_AXIS] || relative_mode)*current_position[Z_AXIS];
-        if (destination[Z_AXIS] < min_pos[Z_AXIS]) destination[Z_AXIS] = min_pos[Z_AXIS];
-        if (destination[Z_AXIS] > max_pos[Z_AXIS]) destination[Z_AXIS] = max_pos[Z_AXIS];
+            // Move up by one layer thickness
 
-        // Move up by one layer thickness
-
-        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS]+ peel_distance, destination[Z_AXIS] + peel_distance, peel_speed, active_extruder);
-
-        st_synchronize();
+            plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS]+ peel_distance, destination[Z_AXIS] + peel_distance, peel_speed, active_extruder);
+            
+            st_synchronize();
+        }
 
         // Retract movement is done in two phases. First the Z axis moves down and then the E axis.
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS] + peel_distance, retract_speed, active_extruder);
@@ -2544,14 +2545,15 @@ void process_commands()
 
         st_synchronize();
 
-        for (int8_t i=0; i < NUM_AXIS; i++) {
-            current_position[i] = destination[i];
-        }
-	
-	if(layer_thickness > 0) {
-        	SERIAL_ECHOLNPGM("Z_move_comp");
-	}	
-        st_synchronize();
+        if(layer_thickness > 0) {
+            for (int8_t i=0; i < NUM_AXIS; i++) {
+                current_position[i] = destination[i];
+            }
+            
+            SERIAL_ECHOLNPGM("Z_move_comp");
+
+            st_synchronize();
+	}
     }
     break;
     
