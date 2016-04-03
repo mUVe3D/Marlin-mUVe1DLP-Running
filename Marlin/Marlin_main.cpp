@@ -238,7 +238,6 @@ static float peel_pause = 0; //Used by mUVe 3D Peel Control
 static float laser_power = 0; //Used by mUVe 3D laser Control
 static float retract_speed = 0; //Used by mUVe 3D Peel Control
 static float tilt_distance = 0; //Used by mUVe 3D Tilt Control
-static float layer_thickness = 0; //Used by mUVe 3D Peel Control
 static bool tilted = false; // Whether we're currently tilted. Sending the command again will tell us to un-tilt.
 static float offset[3] = {0.0, 0.0, 0.0};
 static bool home_all_axis = true;
@@ -2496,13 +2495,6 @@ void process_commands()
       // an M654 command via manual GCode before running a new print job. If not, then the platform is currently tilted, and
       // your print job is going to go poorly.
       tilted = false;
-
-      if (code_seen('H')) {
-          layer_thickness = (float) code_value();
-      }
-      else {
-          layer_thickness = 0;
-      }
     }
     break;
     
