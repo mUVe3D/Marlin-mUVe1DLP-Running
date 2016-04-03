@@ -2512,7 +2512,9 @@ void process_commands()
             manage_inactivity();
             lcd_update();      
         }
-    
+
+        // Retract movement is done in two phases. First the Z axis moves down and then the E axis.
+        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS] + peel_distance, retract_speed, active_extruder);
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS], retract_speed, active_extruder);
         st_synchronize();
     }
