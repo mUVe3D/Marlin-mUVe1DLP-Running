@@ -2508,20 +2508,18 @@ void process_commands()
     
     case 651: // M651 run peel move and return back to start.
     {
-      if(peel_distance > 0);
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + peel_distance, destination[Z_AXIS], peel_speed, active_extruder);
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + peel_distance, destination[Z_AXIS] + peel_distance, peel_speed, active_extruder);
         st_synchronize();
-      if(peel_pause > 0);
-        st_synchronize();
+
         codenum = peel_pause;
         codenum += millis();  // keep track of when we started waiting
         previous_millis_cmd = millis();
         while(millis()  < codenum ){
-        manage_heater();
-        manage_inactivity();
-        lcd_update();      
-      }
+            manage_heater();
+            manage_inactivity();
+            lcd_update();      
+        }
     
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS], retract_speed, active_extruder);
         st_synchronize();
