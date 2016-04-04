@@ -2500,6 +2500,14 @@ void process_commands()
     
     case 651: // M651 run peel move and return back to start.
     {
+        bool do_z_move = false;
+        float position = 0;
+
+        if(code_seen('Z')) {
+            do_z_move = true;
+            position = (float) code_value();
+        }
+
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + peel_distance, destination[Z_AXIS], peel_speed, active_extruder);
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + peel_distance, destination[Z_AXIS] + peel_distance, peel_speed, active_extruder);
         st_synchronize();
@@ -2513,10 +2521,19 @@ void process_commands()
             lcd_update();      
         }
 
+        if (do_z_move) {
+            destination[Z_AXIS] = position + (axis_relative_modes[Z_AXIS] || relative_mode)*current_position[Z_AXIS];
+            destination[E_AXIS] = position + (axis_relative_modes[E_AXIS] || relative_mode)*current_position[E_AXIS];
+        }
+
         // Retract movement is done in two phases. First the Z axis moves down and then the E axis.
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS] + peel_distance, retract_speed, active_extruder);
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS], retract_speed, active_extruder);
         st_synchronize();
+
+        if(do_z_move) {
+            SERIAL_ECHOLNPGM("Z_move_comp");
+        }
     }
     break;
     
