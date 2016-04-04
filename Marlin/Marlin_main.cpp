@@ -238,7 +238,6 @@ static float peel_pause = 0; //Used by mUVe 3D Peel Control
 static float laser_power = 0; //Used by mUVe 3D laser Control
 static float retract_speed = 0; //Used by mUVe 3D Peel Control
 static float tilt_distance = 0; //Used by mUVe 3D Tilt Control
-static float layer_thickness = 0; //Used by mUVe 3D Peel Control
 static bool tilted = false; // Whether we're currently tilted. Sending the command again will tell us to un-tilt.
 static float offset[3] = {0.0, 0.0, 0.0};
 static bool home_all_axis = true;
@@ -2496,35 +2495,45 @@ void process_commands()
       // an M654 command via manual GCode before running a new print job. If not, then the platform is currently tilted, and
       // your print job is going to go poorly.
       tilted = false;
-
-      if (code_seen('H')) {
-          layer_thickness = (float) code_value();
-      }
-      else {
-          layer_thickness = 0;
-      }
     }
     break;
     
     case 651: // M651 run peel move and return back to start.
     {
-      if(peel_distance > 0);
+        bool do_z_move = false;
+        float position = 0;
+
+        if(code_seen('Z')) {
+            do_z_move = true;
+            position = (float) code_value();
+        }
+
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + peel_distance, destination[Z_AXIS], peel_speed, active_extruder);
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS] + peel_distance, destination[Z_AXIS] + peel_distance, peel_speed, active_extruder);
         st_synchronize();
-      if(peel_pause > 0);
-        st_synchronize();
+
         codenum = peel_pause;
         codenum += millis();  // keep track of when we started waiting
         previous_millis_cmd = millis();
         while(millis()  < codenum ){
-        manage_heater();
-        manage_inactivity();
-        lcd_update();      
-      }
-    
+            manage_heater();
+            manage_inactivity();
+            lcd_update();      
+        }
+
+        if (do_z_move) {
+            destination[Z_AXIS] = position + (axis_relative_modes[Z_AXIS] || relative_mode)*current_position[Z_AXIS];
+            destination[E_AXIS] = position + (axis_relative_modes[E_AXIS] || relative_mode)*current_position[E_AXIS];
+        }
+
+        // Retract movement is done in two phases. First the Z axis moves down and then the E axis.
+        plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS] + peel_distance, retract_speed, active_extruder);
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[Z_AXIS], retract_speed, active_extruder);
         st_synchronize();
+
+        if(do_z_move) {
+            SERIAL_ECHOLNPGM("Z_move_comp");
+        }
     }
     break;
     
