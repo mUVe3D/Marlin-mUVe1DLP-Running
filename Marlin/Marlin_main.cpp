@@ -1014,8 +1014,8 @@ void process_commands()
       if(Stopped == false) {
         get_coordinates(); // For X Y Z E F        
         prepare_move();
-        SERIAL_ECHOLNPGM("Z_move_comp");
         st_synchronize();
+	SERIAL_ECHOLNPGM("Z_move_comp");
         //ClearToSend();
         return;
       }
