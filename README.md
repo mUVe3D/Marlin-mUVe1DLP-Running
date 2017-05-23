@@ -2,13 +2,13 @@ All implemented and working! See mUVe 3D's Custom printer control Machine Codes,
 
 Installation Instructions: http://www.muve3d.net/press/supportsources/muve-1-software/
 
-*IMPORTANT* If you have the new pre-soldered endstop you will need to change the following line in the configuration.h file before uploading otherwise your Z endstop won't work correctly. In a few months this will be changed to the default as all new machines will be sent with pre-wired endstops in the future.
+*IMPORTANT* If you have the old endstop you will need to change the following line in the configuration.h file before uploading otherwise your Z endstop won't work correctly.
 
 Original:
-const bool Z_MIN_ENDSTOP_INVERTING = false;
+const bool Z_MIN_ENDSTOP_INVERTING = true;
 
 Change to:
-const bool Z_MIN_ENDSTOP_INVERTING = true;
+const bool Z_MIN_ENDSTOP_INVERTING = false;
 
 M650 D P R S T- 
 
@@ -58,9 +58,7 @@ M655 V9 - Brightness Decrease
 M655 V10 - Brightness Increase
 
 
-==========================
-Marlin 3D Printer Firmware
-==========================
+-Marlin Firmware-
 Marlin has a GPL license because I believe in open development.
 Please do not use this code in products (3D printers, CNC etc) that are closed source or are crippled by a patent.
 
